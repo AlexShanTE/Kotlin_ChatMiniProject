@@ -1,7 +1,7 @@
 class ChatService {
     val chatList: MutableMap<Int, MutableList<Chat>> = mutableMapOf()
-    var chatId = 1
-    var messageId = 1
+    private var chatId = 1
+    private var messageId = 1
 
     fun createChat(users: MutableList<Int>) {
         for (user in users) {
@@ -18,9 +18,14 @@ class ChatService {
         var res: Boolean? = false
         val listOfChatUsers = getUserListByChatId(chatId)
         if (listOfChatUsers != null) {
-            for (user in listOfChatUsers) {
-                res = chatList[user]?.removeIf { it.id == chatId }
-            }
+            chatList.asSequence()
+                .filter { it.key in listOfChatUsers }
+                .forEach { it ->
+                    it.value
+                        .apply {
+                            res = removeIf { it.id == chatId }
+                        }
+                }
         }
         return res
     }
@@ -29,28 +34,17 @@ class ChatService {
         var res: Boolean? = false
         val listOfChatUsers = getUserListByChatId(message.chatId)
         if (listOfChatUsers != null) {
-            for (user in listOfChatUsers) {
-                if (user == message.fromUserId) {
-                    res = chatList[user]?.find { it.id == message.chatId }?.messages?.add(
-                        message.copy(
-                            messageId = messageId,
-                            isOutgoing = true,
-                            isRead = true
-                        )
-                    )
-                } else {
-                    res = chatList[user]?.find { it.id == message.chatId }?.messages?.add(
-                        message.copy(
-                            messageId = messageId,
-                            isIncoming = true,
-                            isRead = false
-                        )
-                    )
+            chatList. asSequence()
+                .filter { it.key in listOfChatUsers }
+                .forEach { it ->
+                    it.value.find { it.id == message.chatId }?.apply {
+                        res = if (it.key == message.fromUserId) {
+                            messages.add(message.copy(messageId = messageId, isOutgoing = true, isRead = true))
+                        } else messages.add(message.copy(messageId = messageId, isIncoming = true, isRead = false))
+                    }
                 }
-            }
-            messageId++
-
         }
+        messageId++
         return res
     }
 
@@ -58,23 +52,28 @@ class ChatService {
         var res: Boolean? = false
         val listOfChatUsers = getUserListByChatId(message.chatId)
         if (listOfChatUsers != null) {
-            for (user in listOfChatUsers) {
-                res =
-                    chatList[user]?.find { chat -> chat.id == message.chatId }?.messages?.removeIf { it.messageId == message.messageId }
-            }
-
+            chatList.asSequence()
+                .filter { it.key in listOfChatUsers }
+                .forEach {
+                    it.value
+                        .find { chat -> chat.id == message.chatId }?.messages?.apply {
+                            res = removeIf { it.messageId == message.messageId }
+                        }
+                }
         }
         return res
     }
 
     fun editMessage(message: Message) {
         val listOfChatUsers = getUserListByChatId(message.chatId)
-         if (listOfChatUsers != null) {
-            for (user in listOfChatUsers) {
-                chatList[user]?.
-                find { chat -> chat.id == message.chatId }?.messages?.
-                find { it.messageId == message.messageId }?.text = message.text
-            }
+        if (listOfChatUsers != null) {
+            chatList
+                .filter { it.key in listOfChatUsers }
+                .forEach {
+                    it.value
+                        .find { chat -> chat.id == message.chatId }?.messages?.find { it.messageId == message.messageId }?.text =
+                        message.text
+                }
         }
     }
 

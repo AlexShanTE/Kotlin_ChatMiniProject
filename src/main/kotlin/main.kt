@@ -17,9 +17,13 @@ fun main() {
     println(chatService.getChats(1))
     println("Chat for user 2")
     println(chatService.getChats(2))
-
-    println(chatService.getUnreadChatsCount(2))
+    println("Chat for user 1 after")
+    println(chatService.getChats(1))
+    println("Chat for user 2 after")
+    println(chatService.getChats(2))
+    chatService.editMessage(message3.copy(messageId = 3, text = "New TEXT"))
+    println(chatService.getChats(2))
     println(chatService.getUnreadMessagesCount(2))
 
-
 }
+
